@@ -5,6 +5,9 @@ from cat.cat_interface import CAT
 from db.db import DataBase
 import logging as L
 
+# Local patch: TeensyMaestro profile aware QSY. Not for upstream.
+import tm_qsy
+
 
 log = L.getLogger(__name__)
 
@@ -67,6 +70,15 @@ class CatApi:
 
         # default to SSB if no mode is given
         mode = 'SSB' if mode is None or mode == '' else mode
+
+        # Local patch: let TeensyMaestro load the matching global profile and
+        # tune. The mode string is still the raw one from the spot here, which
+        # is what the device expects. On success the profile has already set
+        # the mode, so the CAT calls below are skipped entirely. On any
+        # decline, including bands and modes with no profile, execution falls
+        # through to the unmodified upstream path.
+        if tm_qsy.qsy(hrz, mode):
+            return _response(True, "")
 
         if mode == "SSB" and hrz >= 10000000:
             mode = "USB"
